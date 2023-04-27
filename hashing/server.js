@@ -1,6 +1,10 @@
 const path = require("path");
 const express = require("express");
 const session = require("express-session");
+const bcrypt = require('bcryptjs')
+
+//const salt = bcrypt.genSaltSync(10)
+//const hash = bcrypt.hashSync()
 
 // Mock database to store usernames and passwords by username.
 const db = {
@@ -10,7 +14,7 @@ const db = {
   },
   testhashed: {
     username: "testhashed",
-    password: "$2a$10$7WK77kJZ0qzrcgOoE3MszOWuPz2bzPueuSCePScbQnkKwCUx2045q",
+    password: "$2y$10$OF9UZ/jaenU6wFiq3eCNruuheFU1U84UyahmX6T07SufQfTYmq0F2",
   },
 };
 
@@ -75,22 +79,47 @@ app.get("/", (req, res) => {
 // Handle user login.
 app.post("/login", (req, res) => {
   // TODO: Get the username and password from form data
+  const { username, password } = req.body
+  console.log(`username: ${username}, password: ${password}`)
+
+  // (...snippet)
+
   // TODO: Attempt to retrieve the user from the database
+  const user = db[username]
+
   // TODO: If the user exists, check if the password matches the user's password
+  if (bcrypt.compareSync(password, user?.password)) {
+
   // TODO: Log the user in by storing their username in the session
+  req.session.username = username
   // TODO: Display a success message and redirect to /login/success
+  req.session.success = "Logged in successfully!"
+  res.redirect("/login/success")
+} else {
   // TODO: If the user doesn't exist or the password doesn't match, display an error
   //       message and redirect to the homepage
+  req.session.error = 'Authentication failed, please check your username and password.'
+  res.redirect('/')
+}
 });
 
 // Handle user registration.
 app.post("/register", (req, res) => {
   // TODO: Get the username and password from form data
+  const { username, password } = req.body
+  console.log(`username: ${username}, password: ${password}`)
   // TODO: Check if username already exists in the database
+  if (!db[username]) {
   // TODO: If it doesn't, create a new user and store it in the database
+  db[username] = { username, password: bcrypt.hashSync(password) }
   // TODO: Display a success message to the user
-  // TODO: If the user already exists, display an error message
+  req.session.success = 'Registration successful! You can now long in.'
+  } else {
+   // TODO: If the user already exists, display an error message
+   req.session.error = 'Unable to create a new user. Try logging in.'
+  }
   // TODO: Either way, redirect to the homepage so they can log in
+  res.redirect('/')
 });
 
 // A restricted route that can only be accessed if the user is logged in.
